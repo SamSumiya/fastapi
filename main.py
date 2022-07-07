@@ -8,11 +8,21 @@ import random
 app = FastAPI()
 
 
+
 my_posts = [
     {"id": 1, "title": "Food", "content": "Best Pizza ever"}, 
     {"id": 2, "title": "Nature", "content": "Best lake is tahoe"}
 ]
 
+
+def update_post(id, payload) -> dict:  
+    selected = my_posts[id - 1]
+    print(payload, 'pdafdsafasdfsaf')
+    print(selected, 'selected is here')
+    selected['title'] = payload['title']
+    selected['content'] = payload['content']
+    return selected
+    
 
 class Post(BaseModel):
     id: int = random.randrange(1, 1000000000)
@@ -53,3 +63,8 @@ def create(payload: Post):
     my_posts.append(dict)
     return {"Message": dict}
 
+
+@app.put('/posts/{id}')
+def create(id: int, payload: Post):
+    res = update_post(id, payload.dict())
+    return {"posts": res}
