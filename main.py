@@ -35,8 +35,8 @@ def get_posts():
 
 
 @app.get('/posts/{id}')
-def get_post(id: str):
-    int_id = int(id) - 1
+def get_post(id: int):
+    int_id = id - 1
     return{"Data": my_posts[int_id]}
 
 
