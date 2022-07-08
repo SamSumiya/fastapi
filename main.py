@@ -18,6 +18,12 @@ my_posts = [
 def find_post(id): 
     for post in my_posts:
         if id == post['id']: 
+            return id
+    return False
+
+def find_update_post(id: str): 
+    for i, post in enumerate(my_posts):
+        if id == post['id']: 
             return post
     return False
 
@@ -76,10 +82,13 @@ def create_post(payload: Post, response: Response):
 
 
 @app.put('/posts/{id}')
-def update_post(id: int, payload: Post):
-    res = update_post(id, payload.dict())
-    return {"posts": res}
-
+def put_post(id: int, payload: Post):
+    post = find_update_post(id)
+    print(post, 'waht is this post>')
+    if post: 
+        res = update_post(id, payload.dict())
+        return {"posts": res}
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} doest not exit and can't update a none value")
 
 @app.delete('/posts/{id}', status_code = status.HTTP_204_NO_CONTENT)
 def delete_post(id: int):
