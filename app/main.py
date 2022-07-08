@@ -80,7 +80,7 @@ def create(payload: Post, response: Response):
     return {"Message": dict}
 
 
-@app.put('/posts/{id}')
+@app.put('/posts/{id}', status_code = status.HTTP_205_RESET_CONTENT)
 def put(id: int, payload: Post):
     post = find_update_post(id)
     if post:
