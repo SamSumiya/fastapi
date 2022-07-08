@@ -9,13 +9,10 @@ import random
 app = FastAPI()
 
 
-
-
 my_posts = [
     {"id": 1, "title": "Food", "content": "Best Pizza ever"}, 
     {"id": 2, "title": "Nature", "content": "Best lake is tahoe"}
 ]
-
 
 
 def find_post(id): 
@@ -70,7 +67,7 @@ Content: Str
 Date: Date UTC
 """
 @app.post('/posts', status_code = status.HTTP_201_CREATED)
-def create(payload: Post, response: Response):
+def create_post(payload: Post, response: Response):
     dict = payload.dict()
     dict['id'] = random.randrange(1, 1000000)
     dict['date'] = datetime.utcnow() 
@@ -79,15 +76,15 @@ def create(payload: Post, response: Response):
 
 
 @app.put('/posts/{id}')
-def create(id: int, payload: Post):
+def update_post(id: int, payload: Post):
     res = update_post(id, payload.dict())
     return {"posts": res}
 
 
-@app.delete('/posts/{id}', status_code = status.HTTP_301_MOVED_PERMANENTLY)
-def delete(id: int):
+@app.delete('/posts/{id}', status_code = status.HTTP_204_NO_CONTENT)
+def delete_post(id: int):
     post = find_post(id)
     if post:
         my_posts.remove(post)
-        return {"data": post}
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        return Response(status_code=status.HTTP_204_NO_CONTENT) 
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} does not exist...")
