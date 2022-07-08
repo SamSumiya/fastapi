@@ -48,26 +48,7 @@ while True:
 
 
 
-# def find_post(id):
 
-#     for post in my_posts:
-#         if id == post['id']: 
-#             return post
-#     return False
-
-# def find_update_post(id: str): 
-#     for i, post in enumerate(my_posts):
-#         if id == post['id']: 
-#             return post
-#     return False
-
-
-# def update_post(id, payload) -> dict:  
-#     selected = my_posts[id - 1]
-#     selected['title'] = payload['title']
-#     selected['content'] = payload['content']
-#     return selected
-    
 
 class Post(BaseModel):
     id: int = random.randrange(1, 1000000000)
@@ -91,52 +72,90 @@ def get_posts():
     return{"Data": posts}
 
 
-
 @app.get('/posts/{id}')
-def get_post(id: int, response: Response):
-
-    cursor.execute(f"""SELECT * FROM posts where id = {id}""")
+def get_post(id: str, response: Response):
+    cursor.execute(
+    """
+        SELECT 
+            * 
+        FROM 
+            posts 
+        WHERE 
+            id = (%s)""",
+        (id))
     post = cursor.fetchone()
     if post:
         return {"post": post}
     raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail = f"Post with id {id} does not exist...")    
 
-@app.post('/posts')
+
+@app.post('/creates')
 def add_post(post: Post):
-    cursor.execute("""INSERT INTO posts (title, content) VALUES(%s, %s) RETURNING *""", (post.title, post.content))
+    cursor.execute(
+    """
+        INSERT INTO 
+            posts (title, content) 
+        VALUES
+            (%s, %s) 
+        RETURNING 
+            *
+    """, 
+        (post.title, post.content))
     new_post = cursor.fetchone()
     # cursor.execute('COMMIT')
     conn.commit()
     return {"post": new_post}
 
+@app.put('/updates/{id}')
+def update_post(id, post: Post):
+    cursor.execute(
+    '''
+        UPDATE 
+            posts 
+        SET 
+            title=(%s),
+            content=(%s),
+            published=(%s)
+        WHERE id = (%s)
+    ''', 
+    (post.title, post.content, post.published, id))
+    updated_post = cursor.fetchone()
+    conn.commit()
+    return {"post": f"Post with id {id} had been updated"}
 
-# """
-# Title: Str
-# Content: Str
-# Date: Date UTC
-# """
 
 
-# @app.put('/posts/{id}', status_code = status.HTTP_205_RESET_CONTENT)
-# def put(id: int, payload: Post):
-#     post = find_update_post(id)
-#     if post:
-#         res = update_post(id, payload.dict())
-#         return {"posts": res}
-#     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} doest not exit and can't update a none value")
 
-
-# @app.delete('/posts/{id}', status_code = status.HTTP_204_NO_CONTENT)
-# def delete(id: int):
-#     post = find_post(id)
-#     if post:
-#         my_posts.remove(post)
-#         return Response(status_code=status.HTTP_204_NO_CONTENT) 
-#     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} does not exist...")
 
 
 """
 Without DB
+
+
+## Mock DB
+
+# def find_post(id):
+
+#     for post in my_posts:
+#         if id == post['id']: 
+#             return post
+#     return False
+
+# def find_update_post(id: str): 
+#     for i, post in enumerate(my_posts):
+#         if id == post['id']: 
+#             return post
+#     return False
+
+
+# def update_post(id, payload) -> dict:  
+#     selected = my_posts[id - 1]
+#     selected['title'] = payload['title']
+#     selected['content'] = payload['content']
+#     return selected
+    
+
+
 
 @app.get('/posts/{id}')
 def get_post(id: int, response: Response):
@@ -157,5 +176,24 @@ def create(payload: Post, response: Response):
     dict['date'] = datetime.utcnow() 
     my_posts.append(dict)
     return {"Message": dict}
+
+
+@app.put('/posts/{id}', status_code = status.HTTP_205_RESET_CONTENT)
+def put(id: int, payload: Post):
+    post = find_update_post(id)
+    if post:
+        res = update_post(id, payload.dict())
+        return {"posts": res}
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} doest not exit and can't update a none value")
+
+
+@app.delete('/posts/{id}', status_code = status.HTTP_204_NO_CONTENT)
+def delete(id: int):
+    post = find_post(id)
+    if post:
+        my_posts.remove(post)
+        return Response(status_code=status.HTTP_204_NO_CONTENT) 
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} does not exist...")
+
 
 """
