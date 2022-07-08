@@ -76,7 +76,7 @@ def get_posts():
 
 
 @app.get('/posts/{id}', status_code = status.HTTP_200_OK)
-def get_post(id: str, response: Response):
+def get_post(id: int, response: Response):
     cursor.execute(
     """
         SELECT * FROM posts WHERE id=%s
@@ -128,6 +128,19 @@ def update_post(id: int, post: Post):
         "message": f"Post with id {id} had been updated"
     }
 
+
+@app.delete('/deletes/{id}')
+def remove_post(id: int): 
+    cursor.execute(
+    """
+        DELETE FROM posts WHERE id = (%s) RETURNING *
+    """,  (str(id),))
+    deleted_post = cursor.fetchone()
+    conn.commit()
+    return {
+        "post": deleted_post, 
+        "message": f"Post with id {id} was successfully deleted!"
+    }
 
 
 
