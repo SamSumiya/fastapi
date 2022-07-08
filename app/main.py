@@ -65,25 +65,24 @@ def root():
     return {'Message': "Hi People!"}
 
 
-@app.get('/posts')
+@app.get('/posts', status_code = status.HTTP_200_OK)
 def get_posts():
-    cursor.execute("""SELECT * FROM posts""")
+    cursor.execute(
+    """
+        SELECT * FROM posts 
+    """)
     posts = cursor.fetchall()
-    return{"Data": posts}
+    return{"data": posts}
 
 
-@app.get('/posts/{id}')
+@app.get('/posts/{id}', status_code = status.HTTP_200_OK)
 def get_post(id: str, response: Response):
     cursor.execute(
     """
-        SELECT 
-            * 
-        FROM 
-            posts 
-        WHERE 
-            id = (%s)""",
-        (id))
+        SELECT * FROM posts WHERE id=%s
+    """, (str(id),))
     post = cursor.fetchone()
+    print(post, 'dasdfdasfasf')
     if post:
         return {"post": post}
     raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail = f"Post with id {id} does not exist...")    
@@ -107,22 +106,27 @@ def add_post(post: Post):
     return {"post": new_post}
 
 @app.put('/updates/{id}')
-def update_post(id, post: Post):
+def update_post(id: int, post: Post):
     cursor.execute(
-    '''
+    """
         UPDATE 
             posts 
         SET 
             title=(%s),
             content=(%s),
             published=(%s)
-        WHERE id = (%s)
-    ''', 
-    (post.title, post.content, post.published, id))
+        WHERE 
+            id=(%s)
+        RETURNING
+            *
+    """, 
+        (post.title, post.content, post.published, str(id),)) 
     updated_post = cursor.fetchone()
     conn.commit()
-    return {"post": f"Post with id {id} had been updated"}
-
+    return {
+        "post": updated_post,
+        "message": f"Post with id {id} had been updated"
+    }
 
 
 
