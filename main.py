@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Response, Request
 from fastapi.params import Body
 from pydantic import BaseModel
 from datetime import datetime
@@ -33,6 +33,8 @@ class Post(BaseModel):
     date: datetime = datetime.utcnow()
 
 
+
+
 @app.get('/')
 def root():
     return {'Message': "Hi People!"}
@@ -45,9 +47,13 @@ def get_posts():
 
 
 @app.get('/posts/{id}')
-def get_post(id: int):
-    int_id = id - 1
-    return{"Data": my_posts[int_id]}
+def get_post(id: int, response: Response):
+    iid = id - 1
+    
+    if iid > len(my_posts) - 1:
+        response.status_code = 404
+        return{"Data": "Not Found"}
+    return {"Data": my_posts[iid]}
 
 
 """
