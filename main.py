@@ -18,7 +18,7 @@ my_posts = [
 def find_post(id): 
     for post in my_posts:
         if id == post['id']: 
-            return id
+            return post
     return False
 
 def find_update_post(id: str): 
@@ -42,7 +42,6 @@ class Post(BaseModel):
     published: bool = False
     rating: Optional[int] = None
     date: datetime = datetime.utcnow()
-
 
 
 
@@ -73,7 +72,7 @@ Content: Str
 Date: Date UTC
 """
 @app.post('/posts', status_code = status.HTTP_201_CREATED)
-def create_post(payload: Post, response: Response):
+def create(payload: Post, response: Response):
     dict = payload.dict()
     dict['id'] = random.randrange(1, 1000000)
     dict['date'] = datetime.utcnow() 
@@ -82,16 +81,16 @@ def create_post(payload: Post, response: Response):
 
 
 @app.put('/posts/{id}')
-def put_post(id: int, payload: Post):
+def put(id: int, payload: Post):
     post = find_update_post(id)
-    print(post, 'waht is this post>')
-    if post: 
+    if post:
         res = update_post(id, payload.dict())
         return {"posts": res}
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} doest not exit and can't update a none value")
 
+
 @app.delete('/posts/{id}', status_code = status.HTTP_204_NO_CONTENT)
-def delete_post(id: int):
+def delete(id: int):
     post = find_post(id)
     if post:
         my_posts.remove(post)
