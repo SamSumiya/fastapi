@@ -136,12 +136,13 @@ def remove_post(id: int):
         DELETE FROM posts WHERE id = (%s) RETURNING *
     """,  (str(id),))
     deleted_post = cursor.fetchone()
-    conn.commit()
-    return {
-        "post": deleted_post, 
-        "message": f"Post with id {id} was successfully deleted!"
-    }
-
+    if deleted_post: 
+        conn.commit()
+        return {
+            "post": deleted_post, 
+            "message": f"Post with id {id} was successfully deleted!"
+        }
+    raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail = f"Post with id {id} was successfully deleted!") 
 
 
 
