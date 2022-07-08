@@ -9,17 +9,20 @@ import random
 app = FastAPI()
 
 
-
-
 my_posts = [
     {"id": 1, "title": "Food", "content": "Best Pizza ever"}, 
     {"id": 2, "title": "Nature", "content": "Best lake is tahoe"}
 ]
 
 
-
 def find_post(id): 
     for post in my_posts:
+        if id == post['id']: 
+            return post
+    return False
+
+def find_update_post(id: str): 
+    for i, post in enumerate(my_posts):
         if id == post['id']: 
             return post
     return False
@@ -39,7 +42,6 @@ class Post(BaseModel):
     published: bool = False
     rating: Optional[int] = None
     date: datetime = datetime.utcnow()
-
 
 
 
@@ -78,16 +80,19 @@ def create(payload: Post, response: Response):
     return {"Message": dict}
 
 
-@app.put('/posts/{id}')
-def create(id: int, payload: Post):
-    res = update_post(id, payload.dict())
-    return {"posts": res}
+@app.put('/posts/{id}', status_code = status.HTTP_205_RESET_CONTENT)
+def put(id: int, payload: Post):
+    post = find_update_post(id)
+    if post:
+        res = update_post(id, payload.dict())
+        return {"posts": res}
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} doest not exit and can't update a none value")
 
 
-@app.delete('/posts/{id}', status_code = status.HTTP_301_MOVED_PERMANENTLY)
+@app.delete('/posts/{id}', status_code = status.HTTP_204_NO_CONTENT)
 def delete(id: int):
     post = find_post(id)
     if post:
         my_posts.remove(post)
-        return {"data": post}
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        return Response(status_code=status.HTTP_204_NO_CONTENT) 
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} does not exist...")
