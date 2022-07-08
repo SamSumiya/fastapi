@@ -1,3 +1,4 @@
+from email.policy import HTTP
 from tarfile import HeaderError
 from typing import Optional
 from fastapi import FastAPI, Response, Request, status, HTTPException
@@ -9,8 +10,18 @@ import random
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
+import time
 
 app = FastAPI()
+
+
+
+# my_posts = [
+#     {"id": 1, "title": "Food", "content": "Best Pizza ever"}, 
+#     {"id": 2, "title": "Nature", "content": "Best lake is tahoe"}
+# ]
+
+
 
 load_dotenv()
 HOST = os.environ.get('HOST')
@@ -18,44 +29,44 @@ DATABASE = os.environ.get('DATABASE')
 USERNAME = os.environ.get('USERNAME')
 PASSWORD = os.environ.get('PASSWORD')
 
-print(PASSWORD, 'WHAT IS ')
 
-try:
-    conn=psycopg2.connect(host=HOST, database=DATABASE, user=USERNAME, password=PASSWORD, cursor_factory=RealDictCursor)
-    cursor = conn.cursor()
-    print('Database connection was successful!')
-except Exception as error:
-    print({
-    'message': 'Connecting to DB failed...',
-    'error': error
-    })
-
-
-
-my_posts = [
-    {"id": 1, "title": "Food", "content": "Best Pizza ever"}, 
-    {"id": 2, "title": "Nature", "content": "Best lake is tahoe"}
-]
+while True: 
+    try:
+        conn=psycopg2.connect(
+            host=HOST, 
+            database=DATABASE, 
+            user=USERNAME, 
+            password=PASSWORD, 
+            cursor_factory=RealDictCursor
+        )
+        cursor = conn.cursor()
+        print('Database connection was successful!')
+        break
+    except Exception as error:
+        print({'message': 'Connecting to DB failed...','error': error})
+        time.sleep(3)
 
 
-def find_post(id): 
-    for post in my_posts:
-        if id == post['id']: 
-            return post
-    return False
 
-def find_update_post(id: str): 
-    for i, post in enumerate(my_posts):
-        if id == post['id']: 
-            return post
-    return False
+# def find_post(id):
+
+#     for post in my_posts:
+#         if id == post['id']: 
+#             return post
+#     return False
+
+# def find_update_post(id: str): 
+#     for i, post in enumerate(my_posts):
+#         if id == post['id']: 
+#             return post
+#     return False
 
 
-def update_post(id, payload) -> dict:  
-    selected = my_posts[id - 1]
-    selected['title'] = payload['title']
-    selected['content'] = payload['content']
-    return selected
+# def update_post(id, payload) -> dict:  
+#     selected = my_posts[id - 1]
+#     selected['title'] = payload['title']
+#     selected['content'] = payload['content']
+#     return selected
     
 
 class Post(BaseModel):
@@ -75,8 +86,57 @@ def root():
 
 @app.get('/posts')
 def get_posts():
-    return{"Data": my_posts}
+    cursor.execute("""SELECT * FROM posts""")
+    posts = cursor.fetchall()
+    return{"Data": posts}
 
+
+
+@app.get('/posts/{id}')
+def get_post(id: int, response: Response):
+
+    cursor.execute(f"""SELECT * FROM posts where id = {id}""")
+    post = cursor.fetchone()
+    if post:
+        return {"post": post}
+    raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail = f"Post with id {id} does not exist...")    
+
+@app.post('/posts')
+def add_post(post: Post):
+    cursor.execute("""INSERT INTO posts (title, content) VALUES(%s, %s) RETURNING *""", (post.title, post.content))
+    new_post = cursor.fetchone()
+    # cursor.execute('COMMIT')
+    conn.commit()
+    return {"post": new_post}
+
+
+# """
+# Title: Str
+# Content: Str
+# Date: Date UTC
+# """
+
+
+# @app.put('/posts/{id}', status_code = status.HTTP_205_RESET_CONTENT)
+# def put(id: int, payload: Post):
+#     post = find_update_post(id)
+#     if post:
+#         res = update_post(id, payload.dict())
+#         return {"posts": res}
+#     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} doest not exit and can't update a none value")
+
+
+# @app.delete('/posts/{id}', status_code = status.HTTP_204_NO_CONTENT)
+# def delete(id: int):
+#     post = find_post(id)
+#     if post:
+#         my_posts.remove(post)
+#         return Response(status_code=status.HTTP_204_NO_CONTENT) 
+#     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} does not exist...")
+
+
+"""
+Without DB
 
 @app.get('/posts/{id}')
 def get_post(id: int, response: Response):
@@ -89,11 +149,7 @@ def get_post(id: int, response: Response):
     return {"data": my_posts[iid]}
 
 
-"""
-Title: Str
-Content: Str
-Date: Date UTC
-"""
+
 @app.post('/posts', status_code = status.HTTP_201_CREATED)
 def create(payload: Post, response: Response):
     dict = payload.dict()
@@ -102,20 +158,4 @@ def create(payload: Post, response: Response):
     my_posts.append(dict)
     return {"Message": dict}
 
-
-@app.put('/posts/{id}', status_code = status.HTTP_205_RESET_CONTENT)
-def put(id: int, payload: Post):
-    post = find_update_post(id)
-    if post:
-        res = update_post(id, payload.dict())
-        return {"posts": res}
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} doest not exit and can't update a none value")
-
-
-@app.delete('/posts/{id}', status_code = status.HTTP_204_NO_CONTENT)
-def delete(id: int):
-    post = find_post(id)
-    if post:
-        my_posts.remove(post)
-        return Response(status_code=status.HTTP_204_NO_CONTENT) 
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} does not exist...")
+"""
