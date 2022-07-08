@@ -1,5 +1,6 @@
+from tarfile import HeaderError
 from typing import Optional
-from fastapi import FastAPI, Response, Request, status
+from fastapi import FastAPI, Response, Request, status, HTTPException
 from fastapi.params import Body
 from pydantic import BaseModel
 from datetime import datetime
@@ -9,16 +10,23 @@ app = FastAPI()
 
 
 
+
 my_posts = [
     {"id": 1, "title": "Food", "content": "Best Pizza ever"}, 
     {"id": 2, "title": "Nature", "content": "Best lake is tahoe"}
 ]
 
 
+
+def find_post(id): 
+    for post in my_posts:
+        if id == post['id']: 
+            return post
+    return False
+
+
 def update_post(id, payload) -> dict:  
     selected = my_posts[id - 1]
-    print(payload, 'pdafdsafasdfsaf')
-    print(selected, 'selected is here')
     selected['title'] = payload['title']
     selected['content'] = payload['content']
     return selected
@@ -42,7 +50,6 @@ def root():
 
 @app.get('/posts')
 def get_posts():
-    print(datetime.utcnow())
     return{"Data": my_posts}
 
 
@@ -51,9 +58,10 @@ def get_post(id: int, response: Response):
     iid = id - 1
     
     if iid > len(my_posts) - 1:
-        response.status_code = status.HTTP_404_NOT_FOUND
-        return{"Data": "Not Found"}
-    return {"Data": my_posts[iid]}
+        # response.status_code = status.HTTP_404_NOT_FOUND
+        # return{"data": "Not Found, try again with a different id else..."}
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Id {iid} was not found, try again with a different id else...")
+    return {"data": my_posts[iid]}
 
 
 """
@@ -61,8 +69,8 @@ Title: Str
 Content: Str
 Date: Date UTC
 """
-@app.post('/posts')
-def create(payload: Post):
+@app.post('/posts', status_code = status.HTTP_201_CREATED)
+def create(payload: Post, response: Response):
     dict = payload.dict()
     dict['id'] = random.randrange(1, 1000000)
     dict['date'] = datetime.utcnow() 
@@ -74,3 +82,12 @@ def create(payload: Post):
 def create(id: int, payload: Post):
     res = update_post(id, payload.dict())
     return {"posts": res}
+
+
+@app.delete('/posts/{id}', status_code = status.HTTP_301_MOVED_PERMANENTLY)
+def delete(id: int):
+    post = find_post(id)
+    if post:
+        my_posts.remove(post)
+        return {"data": post}
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
