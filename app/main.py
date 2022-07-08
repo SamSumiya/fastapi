@@ -2,11 +2,34 @@ from tarfile import HeaderError
 from typing import Optional
 from fastapi import FastAPI, Response, Request, status, HTTPException
 from fastapi.params import Body
-from pydantic import BaseModel
+from pydantic import BaseModel, PathNotADirectoryError
 from datetime import datetime
+from dotenv import load_dotenv
 import random
+import psycopg2
+from psycopg2.extras import RealDictCursor
+import os
 
 app = FastAPI()
+
+load_dotenv()
+HOST = os.environ.get('HOST')
+DATABASE = os.environ.get('DATABASE')
+USERNAME = os.environ.get('USERNAME')
+PASSWORD = os.environ.get('PASSWORD')
+
+print(PASSWORD, 'WHAT IS ')
+
+try:
+    conn=psycopg2.connect(host=HOST, database=DATABASE, user=USERNAME, password=PASSWORD, cursor_factory=RealDictCursor)
+    cursor = conn.cursor()
+    print('Database connection was successful!')
+except Exception as error:
+    print({
+    'message': 'Connecting to DB failed...',
+    'error': error
+    })
+
 
 
 my_posts = [
