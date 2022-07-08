@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import FastAPI, Response, Request
+from fastapi import FastAPI, Response, Request, status
 from fastapi.params import Body
 from pydantic import BaseModel
 from datetime import datetime
@@ -51,7 +51,7 @@ def get_post(id: int, response: Response):
     iid = id - 1
     
     if iid > len(my_posts) - 1:
-        response.status_code = 404
+        response.status_code = status.HTTP_404_NOT_FOUND
         return{"Data": "Not Found"}
     return {"Data": my_posts[iid]}
 
