@@ -105,7 +105,7 @@ def add_post(post: Post):
     conn.commit()
     return {"post": new_post}
 
-@app.put('/updates/{id}')
+@app.put('/updates/{id}', status_code = status.HTTP_202_ACCEPTED)
 def update_post(id: int, post: Post):
     cursor.execute(
     """
@@ -122,14 +122,16 @@ def update_post(id: int, post: Post):
     """, 
         (post.title, post.content, post.published, str(id),)) 
     updated_post = cursor.fetchone()
-    conn.commit()
-    return {
-        "post": updated_post,
-        "message": f"Post with id {id} had been updated"
-    }
+    if updated_post != None: 
+        conn.commit()
+        return {
+            "post": updated_post,
+            "message": f"Post with id {id} had been updated"
+        }
+    raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail = f"Cannot update post with id {id} doesn't exits...") 
 
 
-@app.delete('/deletes/{id}')
+@app.delete('/deletes/{id}', status_code=status.HTTP_204_NO_CONTENT)
 def remove_post(id: int): 
     cursor.execute(
     """
@@ -142,15 +144,18 @@ def remove_post(id: int):
             "post": deleted_post, 
             "message": f"Post with id {id} was successfully deleted!"
         }
-    raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail = f"Post with id {id} was successfully deleted!") 
+    raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail = f"Post with id {id} doesn't exits") 
+
+
 
 
 
 """
-Without DB
+###
+    Without DB
+### 
 
-
-## Mock DB
+## Mock DB with a list
 
 # def find_post(id):
 
